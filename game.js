@@ -415,7 +415,7 @@ carregador.setDRACOLoader(dracoLoader);
 
 carregador.load(
 
-    './assets/personagem.glb',
+    './assets/steve.glb',
     
 
     function (gltf) {
@@ -570,6 +570,143 @@ carregador.load(
 
     }
 
+);
+
+
+// ==================================================
+// FUNÇÃO PARA CARREGAR MODELOS GLB
+// ==================================================
+
+
+function carregarModelo(
+    arquivo,
+    grupo,
+    x,
+    y,
+    z,
+    escala
+) {
+
+
+    // Carregar o arquivo GLB
+    carregador.load(
+
+
+        arquivo,
+
+
+        // Quando o modelo terminar de carregar
+        function (gltf) {
+
+
+            const modelo = gltf.scene;
+
+
+            // Definir a posição
+            modelo.position.set(x, y, z);
+
+
+            // Definir a escala
+            modelo.scale.setScalar(escala);
+
+
+            // Configurar sombras
+            modelo.traverse(function (objeto) {
+
+
+                if (objeto.isMesh) {
+
+
+                    objeto.castShadow = true;
+
+
+                    objeto.receiveShadow = true;
+
+
+                }
+
+
+            });
+
+
+            // Adicionar o modelo ao grupo escolhido
+            grupo.add(modelo);
+
+
+            console.log(
+                'Modelo carregado:',
+                arquivo
+            );
+
+
+        },
+
+
+        // Acompanhar o progresso do carregamento
+        function (progresso) {
+
+
+            if (progresso.total > 0) {
+
+
+                const porcentagem = Math.round(
+                    progresso.loaded /
+                    progresso.total * 100
+                );
+
+
+                console.log(
+                    `Carregando ${arquivo}: ${porcentagem}%`
+                );
+
+
+            }
+
+
+        },
+
+
+        // Tratar erros
+        function (erro) {
+
+
+            console.error(
+                'Erro ao carregar:',
+                arquivo,
+                erro
+            );
+
+
+        }
+
+
+    );
+
+
+}
+
+// Grupo que organizará o cenário
+const grupoCenario = new THREE.Group();
+
+
+// Adicionar o grupo à cena
+cena.add(grupoCenario);
+
+
+// Carregar o cenário
+carregarModelo(
+    './assets/house_minecraft.glb',
+    grupoCenario,
+    0, 1, 0,
+    1
+);
+
+// Carregar o cenário
+carregarModelo(
+    './assets/house_minecraft.glb',
+    grupoCenario,
+    0, 2, 0,
+    1
 );
 
 // ==================================================
