@@ -1,4 +1,29 @@
 // ==================================================
+// FÍSICA DO PERSONAGEM
+// ==================================================
+
+
+// Velocidade vertical do personagem
+let velocidadeVertical = 0;
+
+
+// Força da gravidade
+const gravidade = 20;
+
+
+// Força do pulo
+const forcaPulo = 8;
+
+
+// Altura do chão
+const alturaChao = 0;
+
+
+// Verificar se o personagem está no chão
+let noChao = true;
+
+
+// ==================================================
 // 1. IMPORTAR O THREE.JS e DRACOLoader
 // ==================================================
 
@@ -415,7 +440,7 @@ carregador.setDRACOLoader(dracoLoader);
 
 carregador.load(
 
-    './assets/personagem.glb',
+    './assets/the_perfect_steve_rigged.glb',
     
 
     function (gltf) {
@@ -572,6 +597,119 @@ carregador.load(
 
 );
 
+
+// ==================================================
+// FUNÇÃO PARA CARREGAR MODELOS GLB
+// ==================================================
+
+
+function carregarModelo(
+    arquivo,
+    grupo,
+    x,
+    y,
+    z,
+    escala
+) {
+
+
+    // Carregar o arquivo GLB
+    carregador.load(
+
+
+        arquivo,
+
+
+        // Quando o modelo terminar de carregar
+        function (gltf) {
+
+
+            const modelo = gltf.scene;
+
+
+            // Definir a posição
+            modelo.position.set(x, y, z);
+
+
+            // Definir a escala
+            modelo.scale.setScalar(escala);
+
+
+            // Configurar sombras
+            modelo.traverse(function (objeto) {
+
+
+                if (objeto.isMesh) {
+
+
+                    objeto.castShadow = true;
+
+
+                    objeto.receiveShadow = true;
+
+
+                }
+
+
+            });
+
+
+            // Adicionar o modelo ao grupo escolhido
+            grupo.add(modelo);
+
+
+            console.log(
+                'Modelo carregado:',
+                arquivo
+            );
+
+
+        },
+
+
+        // Acompanhar o progresso do carregamento
+        function (progresso) {
+
+
+            if (progresso.total > 0) {
+
+
+                const porcentagem = Math.round(
+                    progresso.loaded /
+                    progresso.total * 100
+                );
+
+
+                console.log(
+                    `Carregando ${arquivo}: ${porcentagem}%`
+                );
+
+
+            }
+
+
+        },
+
+
+        // Tratar erros
+        function (erro) {
+
+
+            console.error(
+                'Erro ao carregar:',
+                arquivo,
+                erro
+            );
+
+
+        }
+
+
+    );
+
+
+}
+
 // ==================================================
 // 11. CONTROLES DO TECLADO
 // ==================================================
@@ -605,6 +743,27 @@ window.addEventListener('keydown', function (evento) {
         evento.preventDefault();
 
     }
+if (evento.code === 'Space') {
+
+
+        event.preventDefault();
+
+
+        // Só permite pular quando estiver no chão
+        if (noChao) {
+
+
+            velocidadeVertical = forcaPulo;
+
+
+            noChao = false;
+
+
+        }
+
+
+    }
+
 
 
     teclas[tecla] = true;
@@ -670,6 +829,67 @@ const relogio = new THREE.Clock();
 // ==================================================
 
 function animar() {
+
+    // ==================================================
+// CÂMERA EM PRIMEIRA PESSOA
+// ==================================================
+
+
+// Altura da câmera em relação ao personagem
+const alturaCamera = 1.6;
+
+
+// Pequeno deslocamento para posicionar a câmera no rosto
+const deslocamentoFrontal = 0.1;
+
+
+// Calcular a posição da câmera
+const deslocamentoCamera = new THREE.Vector3(
+    0,
+    alturaCamera,
+    deslocamentoFrontal
+);
+
+
+// Girar o deslocamento conforme a direção do personagem
+deslocamentoCamera.applyQuaternion(
+    personagem.quaternion
+);
+
+
+// Definir a posição desejada da câmera
+const posicaoDesejada = new THREE.Vector3(
+    personagem.position.x + deslocamentoCamera.x,
+    personagem.position.y + deslocamentoCamera.y,
+    personagem.position.z + deslocamentoCamera.z
+);
+
+
+// Movimento suave da câmera
+camera.position.lerp(
+    posicaoDesejada,
+    1 - Math.exp(-5 * delta)
+);
+
+
+// Definir para onde a câmera deve olhar
+const direcaoOlhar = new THREE.Vector3(0, 0, 1);
+
+
+// Girar a direção conforme a orientação do personagem
+direcaoOlhar.applyQuaternion(
+    personagem.quaternion
+);
+
+
+// Definir o ponto observado pela câmera
+alvoCamera.copy(posicaoDesejada).add(
+    direcaoOlhar.multiplyScalar(10)
+);
+
+
+// Orientar a câmera
+camera.lookAt(alvoCamera);
 
     requestAnimationFrame(animar);
 
@@ -915,3 +1135,4 @@ window.addEventListener('resize', function () {
     );
 
 });
+
