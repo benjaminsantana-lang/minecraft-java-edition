@@ -1,29 +1,4 @@
 // ==================================================
-// FÍSICA DO PERSONAGEM
-// ==================================================
-
-
-// Velocidade vertical do personagem
-let velocidadeVertical = 0;
-
-
-// Força da gravidade
-const gravidade = 20;
-
-
-// Força do pulo
-const forcaPulo = 8;
-
-
-// Altura do chão
-const alturaChao = 0;
-
-
-// Verificar se o personagem está no chão
-let noChao = true;
-
-
-// ==================================================
 // 1. IMPORTAR O THREE.JS e DRACOLoader
 // ==================================================
 
@@ -34,6 +9,17 @@ import { GLTFLoader } from
 
 import { DRACOLoader } from
     'three/addons/loaders/DRACOLoader.js';
+
+// ==================================================
+// CAIXA DE COLISÃO DO PERSONAGEM
+// ==================================================
+
+const caixaPersonagem = new THREE.Box3();
+
+// Dimensões aproximadas do personagem
+const larguraPersonagem = 0.6;
+const alturaPersonagem = 1.8;
+const profundidadePersonagem = 0.6;
     
 // ==================================================
 // 2. ELEMENTOS DA PÁGINA
@@ -45,6 +31,12 @@ const mensagem = document.getElementById('mensagem');
 
 const status = document.getElementById('status');
 
+// ==================================================
+// SISTEMA DE COLISÃO
+// ==================================================
+
+// Lista de objetos que terão colisão
+const objetosColisao = [];
 
 // ==================================================
 // 3. CRIAR A CENA 3D
@@ -63,6 +55,7 @@ cena.fog = new THREE.Fog(
     35,
     100
 );
+
 
 // ==================================================
 // 4. CRIAR A CÂMERA
@@ -123,6 +116,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 areaJogo.appendChild(renderer.domElement);
 
+
 // ==================================================
 // 6. ILUMINAÇÃO DO AMBIENTE
 // ==================================================
@@ -167,6 +161,7 @@ sol.shadow.camera.top = 25;
 sol.shadow.camera.bottom = -25;
 
 cena.add(sol);
+
 
 // ==================================================
 // 7. CRIAR O CAMPO
@@ -219,184 +214,23 @@ chao.receiveShadow = true;
 cena.add(chao);
 
 // ==================================================
-// 8. CRIAR ÁRVORES
+// FÍSICA DO PERSONAGEM
 // ==================================================
 
-function criarArvore(x, z) {
+// Velocidade vertical do personagem
+let velocidadeVertical = 0;
 
-    // Tronco
+// Força da gravidade
+const gravidade = 20;
 
-    const geometriaTronco = new THREE.CylinderGeometry(
+// Força do pulo
+const forcaPulo = 8;
 
-        0.2,
+// Altura do chão
+const alturaChao = 0;
 
-        0.3,
-
-        1.5,
-
-        8
-
-    );
-
-    const materialTronco = new THREE.MeshStandardMaterial({
-
-        color: 0x795548
-
-    });
-
-    const tronco = new THREE.Mesh(
-
-        geometriaTronco,
-
-        materialTronco
-
-    );
-
-    tronco.position.set(
-
-        x,
-
-        0.75,
-
-        z
-
-    );
-
-    tronco.castShadow = true;
-
-    tronco.receiveShadow = true;
-
-    cena.add(tronco);
-
-
-    // Copa da árvore
-
-    const geometriaCopa = new THREE.ConeGeometry(
-
-        1.2,
-
-        2.5,
-
-        8
-
-    );
-
-    const materialCopa = new THREE.MeshStandardMaterial({
-
-        color: 0x2e7d32
-
-    });
-
-    const copa = new THREE.Mesh(
-
-        geometriaCopa,
-
-        materialCopa
-
-    );
-
-    copa.position.set(
-
-        x,
-
-        2.5,
-
-        z
-
-    );
-
-    copa.castShadow = true;
-
-    cena.add(copa);
-
-}
-
-
-// Criar árvores nas bordas do cenário
-
-for (let i = -40; i <= 40; i += 10) {
-
-    criarArvore(i, -35);
-
-    criarArvore(i, 35);
-
-    criarArvore(-35, i);
-
-    criarArvore(35, i);
-
-}
-
-
-// ==================================================
-// 9. CRIAR PEDRAS DECORATIVAS
-// ==================================================
-
-function criarPedra(x, z) {
-
-    const geometria = new THREE.DodecahedronGeometry(
-
-        0.5,
-
-        0
-
-    );
-
-    const material = new THREE.MeshStandardMaterial({
-
-        color: 0x808080,
-
-        roughness: 1
-
-    });
-
-    const pedra = new THREE.Mesh(
-
-        geometria,
-
-        material
-
-    );
-
-    pedra.position.set(
-
-        x,
-
-        0.3,
-
-        z
-
-    );
-
-    pedra.rotation.set(
-
-        Math.random(),
-
-        Math.random(),
-
-        Math.random()
-
-    );
-
-    pedra.castShadow = true;
-
-    pedra.receiveShadow = true;
-
-    cena.add(pedra);
-
-}
-
-
-// Distribuir pedras pelo campo
-
-for (let i = 0; i < 25; i++) {
-
-    const x = Math.random() * 50 - 25;
-
-    const z = Math.random() * 50 - 25;
-
-    criarPedra(x, z);
-
-}
+// Verificar se o personagem está no chão
+let noChao = true;
 
 // ==================================================
 // 10. CRIAR O PERSONAGEM
@@ -405,6 +239,7 @@ for (let i = 0; i < 25; i++) {
 // Grupo que controla a posição e a direção do personagem
 
 const personagem = new THREE.Group();
+
 
 cena.add(personagem);
 
@@ -434,6 +269,7 @@ dracoLoader.setDecoderPath(
 const carregador = new GLTFLoader();
 
 carregador.setDRACOLoader(dracoLoader);
+
 
 
 // Importar o arquivo GLB
@@ -589,7 +425,7 @@ carregador.load(
 
             'Não foi possível carregar o personagem. ' +
 
-            'Verifique o arquivo assets/personagem.glb.';
+            'Verifique o arquivo assets/the_perfect_steve_rigged.glb.';
 
         status.textContent = 'Erro ao carregar o modelo';
 
@@ -597,11 +433,9 @@ carregador.load(
 
 );
 
-
 // ==================================================
 // FUNÇÃO PARA CARREGAR MODELOS GLB
 // ==================================================
-
 
 function carregarModelo(
     arquivo,
@@ -609,91 +443,85 @@ function carregarModelo(
     x,
     y,
     z,
-    escala
+    escala,
+    colidir = false
 ) {
-
 
     // Carregar o arquivo GLB
     carregador.load(
 
-
         arquivo,
-
 
         // Quando o modelo terminar de carregar
         function (gltf) {
 
-
             const modelo = gltf.scene;
-
 
             // Definir a posição
             modelo.position.set(x, y, z);
 
-
             // Definir a escala
             modelo.scale.setScalar(escala);
-
 
             // Configurar sombras
             modelo.traverse(function (objeto) {
 
-
                 if (objeto.isMesh) {
-
 
                     objeto.castShadow = true;
 
-
                     objeto.receiveShadow = true;
-
 
                 }
 
-
             });
-
 
             // Adicionar o modelo ao grupo escolhido
             grupo.add(modelo);
 
+            // ==================================================
+            // CRIAR COLISÃO DO MODELO
+            // ==================================================
+
+            if (colidir) {
+
+                // Criar uma caixa invisível ao redor do modelo
+                const caixa = new THREE.Box3();
+
+                caixa.setFromObject(modelo);
+
+                // Adicionar à lista de colisões
+                objetosColisao.push(caixa);
+
+            }
 
             console.log(
                 'Modelo carregado:',
                 arquivo
             );
 
-
         },
-
 
         // Acompanhar o progresso do carregamento
         function (progresso) {
 
-
             if (progresso.total > 0) {
-
 
                 const porcentagem = Math.round(
                     progresso.loaded /
                     progresso.total * 100
                 );
 
-
                 console.log(
                     `Carregando ${arquivo}: ${porcentagem}%`
                 );
 
-
             }
-
 
         },
 
-
         // Tratar erros
         function (erro) {
-
 
             console.error(
                 'Erro ao carregar:',
@@ -701,14 +529,48 @@ function carregarModelo(
                 erro
             );
 
-
         }
-
 
     );
 
-
 }
+
+
+// Grupo que organizará o cenário
+const grupoCenario = new THREE.Group();
+
+// Adicionar o grupo à cena
+cena.add(grupoCenario);
+
+// Carregar o cenário
+carregarModelo(
+    './assets/minecraft_tree.glb',
+    grupoCenario,
+    15, 0, 0,
+    1,
+    true
+);
+
+// Carregar o cenário
+carregarModelo(
+    './assets/minecraft_tree.glb',
+    grupoCenario,
+    1, 0, 5,
+    10,
+    true
+);
+
+// Carregar o cenário
+carregarModelo(
+    './assets/house_minecraft.glb',
+    grupoCenario,
+    20, 0, 0,
+    10,
+    true
+);
+
+
+
 
 // ==================================================
 // 11. CONTROLES DO TECLADO
@@ -742,29 +604,21 @@ window.addEventListener('keydown', function (evento) {
 
         evento.preventDefault();
 
-    }
-if (evento.code === 'Space') {
+    } if (evento.code === 'Space') {
 
-
-        event.preventDefault();
-
+        evento.preventDefault();
 
         // Só permite pular quando estiver no chão
         if (noChao) {
 
-
             velocidadeVertical = forcaPulo;
-
 
             noChao = false;
 
-
         }
 
-
     }
-
-
+  
 
     teclas[tecla] = true;
 
@@ -795,6 +649,9 @@ window.addEventListener('blur', function () {
 
 });
 
+
+
+
 // ==================================================
 // 12. CONFIGURAR A MOVIMENTAÇÃO
 // ==================================================
@@ -811,6 +668,7 @@ const limiteCampo = 30;
 
 const direcao = new THREE.Vector3();
 
+
 // ==================================================
 // 13. ACOMPANHAR O PERSONAGEM COM A CÂMERA
 // ==================================================
@@ -825,71 +683,53 @@ const alvoCamera = new THREE.Vector3();
 const relogio = new THREE.Clock();
 
 // ==================================================
+// VERIFICAR COLISÕES
+// ==================================================
+
+function verificarColisao(x, y, z) {
+
+    // Definir os limites da caixa do personagem
+    caixaPersonagem.min.set(
+
+        x - larguraPersonagem / 2,
+
+        y,
+
+        z - profundidadePersonagem / 2
+
+    );
+
+    caixaPersonagem.max.set(
+
+        x + larguraPersonagem / 2,
+
+        y + alturaPersonagem,
+
+        z + profundidadePersonagem / 2
+
+    );
+
+    // Verificar colisão com cada objeto
+    for (const caixa of objetosColisao) {
+
+        if (caixaPersonagem.intersectsBox(caixa)) {
+
+            return true;
+
+        }
+
+    }
+
+    return false;
+
+}
+
+// ==================================================
 // 15. FUNÇÃO PRINCIPAL DO JOGO
 // ==================================================
 
 function animar() {
 
-    // ==================================================
-// CÂMERA EM PRIMEIRA PESSOA
-// ==================================================
-
-
-// Altura da câmera em relação ao personagem
-const alturaCamera = 1.6;
-
-
-// Pequeno deslocamento para posicionar a câmera no rosto
-const deslocamentoFrontal = 0.1;
-
-
-// Calcular a posição da câmera
-const deslocamentoCamera = new THREE.Vector3(
-    0,
-    alturaCamera,
-    deslocamentoFrontal
-);
-
-
-// Girar o deslocamento conforme a direção do personagem
-deslocamentoCamera.applyQuaternion(
-    personagem.quaternion
-);
-
-
-// Definir a posição desejada da câmera
-const posicaoDesejada = new THREE.Vector3(
-    personagem.position.x + deslocamentoCamera.x,
-    personagem.position.y + deslocamentoCamera.y,
-    personagem.position.z + deslocamentoCamera.z
-);
-
-
-// Movimento suave da câmera
-camera.position.lerp(
-    posicaoDesejada,
-    1 - Math.exp(-5 * delta)
-);
-
-
-// Definir para onde a câmera deve olhar
-const direcaoOlhar = new THREE.Vector3(0, 0, 1);
-
-
-// Girar a direção conforme a orientação do personagem
-direcaoOlhar.applyQuaternion(
-    personagem.quaternion
-);
-
-
-// Definir o ponto observado pela câmera
-alvoCamera.copy(posicaoDesejada).add(
-    direcaoOlhar.multiplyScalar(10)
-);
-
-
-// Orientar a câmera
-camera.lookAt(alvoCamera);
 
     requestAnimationFrame(animar);
 
@@ -925,6 +765,35 @@ camera.lookAt(alvoCamera);
         direcao.set(0, 0, 0);
 
 
+        // ==================================================
+        // GRAVIDADE E MOVIMENTO VERTICAL
+        // ==================================================
+
+        // Aplicar gravidade enquanto estiver no ar
+        if (!noChao) {
+
+            velocidadeVertical -= gravidade * delta;
+
+        }
+
+        // Atualizar a posição vertical
+        personagem.position.y += velocidadeVertical * delta;
+
+        // ==================================================
+        // VERIFICAR CONTATO COM O CHÃO
+        // ==================================================
+
+        if (personagem.position.y <= alturaChao) {
+
+            personagem.position.y = alturaChao;
+
+            velocidadeVertical = 0;
+
+            noChao = true;
+
+        }
+
+
         // Movimentação horizontal
 
         if (
@@ -952,7 +821,7 @@ camera.lookAt(alvoCamera);
 
         }
 
-
+        
         // Movimentação lateral
 
         if (
@@ -983,28 +852,62 @@ camera.lookAt(alvoCamera);
 
         // Verificar se existe movimento
 
-        if (direcao.lengthSq() > 0) {
+        // ==================================================
+        // MOVIMENTO COM COLISÃO
+        // ==================================================
 
-            // Normalizar evita que a diagonal
-            // seja mais rápida que o movimento reto
+        if (direcao.lengthSq() > 0) {
 
             direcao.normalize();
 
+            // Calcular o deslocamento
+            const movimentoX = direcao.x * velocidade * delta;
 
-            // Movimentar o personagem
+            const movimentoZ = direcao.z * velocidade * delta;
 
-            personagem.position.x +=
+            // ==============================================
+            // TESTAR MOVIMENTO NO EIXO X
+            // ==============================================
 
-                direcao.x * velocidade * delta;
+            const novaPosicaoX =
+                personagem.position.x + movimentoX;
 
+            if (!verificarColisao(
 
-            personagem.position.z +=
+                novaPosicaoX,
 
-                direcao.z * velocidade * delta;
+                personagem.position.y,
 
+                personagem.position.z
 
-            // Girar o personagem na direção do movimento
+            )) {
 
+                personagem.position.x = novaPosicaoX;
+
+            }
+
+            // ==============================================
+            // TESTAR MOVIMENTO NO EIXO Z
+            // ==============================================
+
+            const novaPosicaoZ =
+                personagem.position.z + movimentoZ;
+
+            if (!verificarColisao(
+
+                personagem.position.x,
+
+                personagem.position.y,
+
+                novaPosicaoZ
+
+            )) {
+
+                personagem.position.z = novaPosicaoZ;
+
+            }
+
+            // Rotacionar o personagem conforme o movimento
             personagem.rotation.y = Math.atan2(
 
                 direcao.x,
@@ -1014,6 +917,7 @@ camera.lookAt(alvoCamera);
             );
 
         }
+
 
 
         // Impedir que o personagem saia do campo
@@ -1039,64 +943,71 @@ camera.lookAt(alvoCamera);
 
         );
 
-
         // ==================================================
-        // CÂMERA QUE ACOMPANHA O PERSONAGEM
+        // CÂMERA EM PRIMEIRA PESSOA
         // ==================================================
 
-        // Definir onde a câmera deve ficar
+        // Altura da câmera em relação ao personagem
+        const alturaCamera = 1.6;
 
-        const posicaoDesejada = new THREE.Vector3(
+        // Pequeno deslocamento para posicionar a câmera no rosto
+        const deslocamentoFrontal = 0.1;
 
-            personagem.position.x,
-
-            personagem.position.y + 6,
-
-            personagem.position.z + 9
-
+        // Calcular a posição da câmera
+        const deslocamentoCamera = new THREE.Vector3(
+            0,
+            alturaCamera,
+            deslocamentoFrontal
         );
 
+        // Girar o deslocamento conforme a direção do personagem
+        deslocamentoCamera.applyQuaternion(
+            personagem.quaternion
+        );
+
+        // Definir a posição desejada da câmera
+        const posicaoDesejada = new THREE.Vector3(
+            personagem.position.x + deslocamentoCamera.x,
+            personagem.position.y + deslocamentoCamera.y,
+            personagem.position.z + deslocamentoCamera.z
+        );
 
         // Movimento suave da câmera
-
         camera.position.lerp(
-
             posicaoDesejada,
-
-            1 - Math.exp(-4 * delta)
-
+            1 - Math.exp(-5 * delta)
         );
 
+        // Definir para onde a câmera deve olhar
+        const direcaoOlhar = new THREE.Vector3(0, 0, 1);
 
-        // Definir o ponto que a câmera observa
-
-        alvoCamera.set(
-
-            personagem.position.x,
-
-            personagem.position.y + 1,
-
-            personagem.position.z
-
+        // Girar a direção conforme a orientação do personagem
+        direcaoOlhar.applyQuaternion(
+            personagem.quaternion
         );
 
+        // Definir o ponto observado pela câmera
+        alvoCamera.copy(posicaoDesejada).add(
+            direcaoOlhar.multiplyScalar(10)
+        );
 
+        // Orientar a câmera
         camera.lookAt(alvoCamera);
 
+
+        // ==================================================
+        // DESENHAR A CENA
+        // ==================================================
+
+        renderer.render(
+
+            cena,
+
+            camera
+
+        );
+
     }
-
-
-    // ==================================================
-    // DESENHAR A CENA
-    // ==================================================
-
-    renderer.render(
-
-        cena,
-
-        camera
-
-    );
 
 }
 
@@ -1135,4 +1046,3 @@ window.addEventListener('resize', function () {
     );
 
 });
-
